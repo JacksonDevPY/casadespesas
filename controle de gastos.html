@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle Financeiro Familiar</title>
+    <style>
+        /* Mantive seu CSS original, ele estava funcional */
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #f4f6f9; color: #333; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        header { text-align: center; margin-bottom: 30px; padding: 20px; background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; border-radius: 8px; }
+        .main-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+        @media (max-width: 768px) { .main-layout { grid-template-columns: 1fr; } }
+        .card { background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .card-title { font-size: 18px; font-weight: 600; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #f0f0f0; color: #2c3e50; }
+        .form-group { margin-bottom: 15px; }
+        .input-group { position: relative; }
+        .input-group input { width: 100%; padding: 10px 10px 10px 35px; border: 1px solid #dcdde1; border-radius: 4px; }
+        .input-group span { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #7f8c8d; }
+        .total-box { margin-top: 20px; padding: 15px; border-radius: 6px; font-weight: bold; display: flex; justify-content: space-between; }
+        .total-proventos { background-color: #e8f8f5; color: #27ae60; }
+        .total-despesas { background-color: #fdedec; color: #c0392b; }
+        .despesa-item { display: flex; gap: 10px; margin-bottom: 10px; }
+        .despesa-item input[type="text"] { flex: 2; padding: 8px; border: 1px solid #dcdde1; border-radius: 4px; }
+        .btn-remove { background: none; border: none; color: #e74c3c; cursor: pointer; font-size: 18px; }
+        .btn-add { background-color: #3498db; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; }
+        .dashboard-card { background: white; border-radius: 8px; padding: 20px; text-align: center; }
+        .chart-container { position: relative; width: 200px; height: 200px; margin: 20px auto; }
+        .progress-pie { width: 100%; height: 100%; border-radius: 50%; background: conic-gradient(#e74c3c 0%, #e2e8f0 0%); display: flex; align-items: center; justify-content: center; }
+        .progress-pie-inner { width: 70%; height: 70%; background-color: white; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .percentage-text { font-size: 28px; font-weight: bold; color: #2c3e50; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Controle Financeiro Residencial</h1>
+        <p>Organize suas receitas, despesas e acompanhe o comprometimento da sua renda</p>
+    </header>
+
+    <div class="main-layout">
+        <div class="card">
+            <div class="card-title">Proventos (Receitas)</div>
+            <div class="form-group">
+                <label>Salário 1</label>
+                <div class="input-group"><span>R$</span><input type="number" id="salario1" value="0" oninput="calcularFinanceiro()"></div>
+            </div>
+            <div class="form-group">
+                <label>Salário 2</label>
+                <div class="input-group"><span>R$</span><input type="number" id="salario2" value="0" oninput="calcularFinanceiro()"></div>
+            </div>
+            <div class="total-box total-proventos">
+                <span>Soma dos Salários:</span>
+                <span id="txt-total-proventos">R$ 0,00</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Despesas (Contas)</div>
+            <div class="total-box total-despesas">
+                <span>Soma das Contas:</span>
+                <span id="txt-total-despesas">R$ 0,00</span>
+            </div>
+            <div id="lista-despesas" style="margin-top: 15px;"></div>
+            <button class="btn-add" onclick="adicionarDespesa()">+ Adicionar Conta</button>
+        </div>
+    </div>
+
+    <div class="dashboard-card">
+        <div class="chart-container">
+            <div class="progress-pie" id="grafico-pizza">
+                <div class="progress-pie-inner">
+                    <span class="percentage-text" id="pct-texto">0%</span>
+                </div>
+            </div>
+        </div>
+        <div id="status-mensagem">Insira os valores acima.</div>
+    </div>
+</div>
+
+<script>
+    function formatarMoeda(valor) {
+        return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
+
+    function salvarDados() {
+    const dados = {
+        salario1: document.getElementById('salario1').value,
+        salario2: document.getElementById('salario2').value,
+        // Simplificamos o envio para enviar o resumo ou a lista completa
+        totalProventos: document.getElementById('txt-total-proventos').innerText,
+        totalDespesas: document.getElementById('txt-total-despesas').innerText
+    };
+
+    const url = "https://script.google.com/macros/s/AKfycbyM0MBgLJ0fTaspW7zk6HaU0l3m6hw6OPKmMEMN1yxAjVj5hS3WVsqq9SEfqQIVGxPQ/exec";
+
+    fetch(url, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dados)
+    })
+    .then(() => console.log("Dados enviados para a planilha!"))
+    .catch(error => console.error("Erro ao enviar:", error));
+}
+
+    function adicionarDespesa(desc = "", valor = 0) {
+        const lista = document.getElementById('lista-despesas');
+        const novoItem = document.createElement('div');
+        novoItem.className = 'despesa-item';
+        novoItem.innerHTML = `
+            <input type="text" value="${desc}" placeholder="Ex: Internet, Água">
+            <div class="input-group">
+                <span>R$</span>
+                <input type="number" value="${valor}" oninput="calcularFinanceiro()">
+            </div>
+            <button class="btn-remove" onclick="this.parentElement.remove(); calcularFinanceiro();">&times;</button>
+        `;
+        lista.appendChild(novoItem);
+        calcularFinanceiro();
+    }
+
+    function calcularFinanceiro() {
+        const s1 = parseFloat(document.getElementById('salario1').value) || 0;
+        const s2 = parseFloat(document.getElementById('salario2').value) || 0;
+        const totalProventos = s1 + s2;
+
+        let totalDespesas = 0;
+        document.querySelectorAll('#lista-despesas .despesa-item input[type="number"]').forEach(input => {
+            totalDespesas += parseFloat(input.value) || 0;
+        });
+
+        document.getElementById('txt-total-proventos').innerText = formatarMoeda(totalProventos);
+        document.getElementById('txt-total-despesas').innerText = formatarMoeda(totalDespesas);
+
+        let pct = totalProventos > 0 ? (totalDespesas / totalProventos) * 100 : 0;
+        const grafico = document.getElementById('grafico-pizza');
+        grafico.style.background = `conic-gradient(#e74c3c ${pct}%, #e2e8f0 ${pct}%)`;
+        document.getElementById('pct-texto').innerText = `${Math.round(pct)}%`;
+
+        salvarDados();
+    }
+
+    window.onload = () => {
+        const dadosSalvos = localStorage.getItem('controleFinanceiro');
+        if (dadosSalvos) {
+            const dados = JSON.parse(dadosSalvos);
+            document.getElementById('salario1').value = dados.salario1;
+            document.getElementById('salario2').value = dados.salario2;
+            dados.despesas.forEach(d => adicionarDespesa(d.desc, d.valor));
+        } else {
+            adicionarDespesa("Aluguel", 0);
+            adicionarDespesa("Energia", 0);
+        }
+        calcularFinanceiro();
+    };
+</script>
+
+</body>
+</html>
