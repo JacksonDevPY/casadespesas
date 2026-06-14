@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Controle Financeiro Familiar</title>
     <style>
-        /* Mantive seu CSS original, ele estava funcional */
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: #f4f6f9; color: #333; padding: 20px; }
         .container { max-width: 1200px; margin: 0 auto; }
@@ -86,32 +85,40 @@
     }
 
     function salvarDados() {
-    const dados = {
-        salario1: document.getElementById('salario1').value,
-        salario2: document.getElementById('salario2').value,
-        // Simplificamos o envio para enviar o resumo ou a lista completa
-        totalProventos: document.getElementById('txt-total-proventos').innerText,
-        totalDespesas: document.getElementById('txt-total-despesas').innerText
-    };
+        const despesas = [];
+        document.querySelectorAll('.despesa-item').forEach(item => {
+            despesas.push({
+                desc: item.querySelector('input[type="text"]').value,
+                valor: item.querySelector('input[type="number"]').value
+            });
+        });
 
-    const url = "https://script.google.com/macros/s/AKfycbyM0MBgLJ0fTaspW7zk6HaU0l3m6hw6OPKmMEMN1yxAjVj5hS3WVsqq9SEfqQIVGxPQ/exec";
+        const dados = {
+            salario1: document.getElementById('salario1').value,
+            salario2: document.getElementById('salario2').value,
+            despesas: despesas,
+            totalProventos: document.getElementById('txt-total-proventos').innerText,
+            totalDespesas: document.getElementById('txt-total-despesas').innerText
+        };
 
-    fetch(url, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dados)
-    })
-    .then(() => console.log("Dados enviados para a planilha!"))
-    .catch(error => console.error("Erro ao enviar:", error));
-}
+        localStorage.setItem('controleFinanceiro', JSON.stringify(dados));
+
+        const url = "https://script.google.com/macros/s/AKfycbx9TRxZJtlrTRbe68VDd32TRvyNRJyqCx8wqYALD3Y8lahQYm-EoqkN8apOxkZ11VFB/exec";
+
+        fetch(url, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(dados)
+        }).catch(error => console.error("Erro ao enviar:", error));
+    }
 
     function adicionarDespesa(desc = "", valor = 0) {
         const lista = document.getElementById('lista-despesas');
         const novoItem = document.createElement('div');
         novoItem.className = 'despesa-item';
         novoItem.innerHTML = `
-            <input type="text" value="${desc}" placeholder="Ex: Internet, Água">
+            <input type="text" value="${desc}" placeholder="Ex: Internet, Água" oninput="salvarDados()">
             <div class="input-group">
                 <span>R$</span>
                 <input type="number" value="${valor}" oninput="calcularFinanceiro()">
@@ -119,7 +126,6 @@
             <button class="btn-remove" onclick="this.parentElement.remove(); calcularFinanceiro();">&times;</button>
         `;
         lista.appendChild(novoItem);
-        calcularFinanceiro();
     }
 
     function calcularFinanceiro() {
